@@ -1,0 +1,296 @@
+\documentclass{article}
+\usepackage[sc]{mathpazo}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{verbose,tmargin=2.5cm,bmargin=2.5cm,lmargin=2.5cm,rmargin=2.5cm}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+\usepackage{url}
+\usepackage[unicode=true,pdfusetitle,
+ bookmarks=true,bookmarksnumbered=true,bookmarksopen=true,bookmarksopenlevel=2,
+ breaklinks=false,pdfborder={0 0 1},backref=false,colorlinks=false]
+ {hyperref}
+\hypersetup{
+ pdfstartview={XYZ null null 1}}
+\usepackage{breakurl}
+\begin{document}
+
+<<setup, include=FALSE, cache=FALSE>>=
+library(knitr)
+# set global chunk options
+#opts_chunk$set(fig.path='figure/minimal-', fig.align='center', fig.show='hold')
+#options(formatR.arrow=TRUE,width=90)
+@
+\title{Car Evaluation Dataset - CM3111}
+\author{Muhammed Umair Iqbal}
+\maketitle
+\section{Data Exploration}
+\subsection{Dataset Choice}
+I have selected a data set that is related to cars as I have a passion for cars and thought that it would be a good exploring a data set related to cars via R Studio. I got my dataset from the UCI Machine Learning Repository from "http://archive.ics.uci.edu/ml/datasets/Car+Evaluation".
+\subsection{Technology Platform}
+The application I have used to explore my data is R Studio and carry out experiments on. After researching hadoop i have found that i do not need to be using it. For many reasons, one of them being that Hadoop can store massive amounts of data, Petabytes to be exact. Moreover Hadoop should be used when the users requires thousands of operations per second on terabytes of data at a time, which is not what is required in this instance which is why i haven't incorporated Hadoop or any other Big Data Technologies.
+
+\subsection{Problem Statement}
+
+The dataset I have choosen is a Car Evaluation dataset.It has 6 Attributes;
+\begin{itemize}
+\item Price
+\item Maint(Maintence of the car)
+\item Doors(Number of Doors)
+\item Persons(Number of people the car can seat at once)
+\item Boot(The size of the boot)
+\item Safety(The safety rating of the car)
+\end{itemize}
+The aim is to build a predictive model, to predict what the Evaluation is of the car.
+\subsection{Data Exploration} 
+I began to explore my Data set, by finding out the numbers of rows and coloumns
+<<>>=
+#Seting working directory
+    curdir <- getwd()
+#Reading in my prefered dataset(Calling it df for short of Data frame)
+  df=read.csv(paste(curdir,"/car.data",sep = ""),header=T,
+              na.strings="?")
+  nr <- nrow(df) # number of rows
+  nc <- ncol(df) # number of columns
+#delivering the data the way i want to present it 
+  cat ("Cars Evaluation Dataset has: ", nr," Rows", " and ",nc, " Columns")
+@
+I then got a breif description from R before changing making any changes to the dataset
+<<>>=
+#Reciveing a breif description of the data set
+  str(df)
+@
+The coloumns of the dataset can be dislayed by doing the following:
+<<>>=
+#Retrieving the coloumn names
+  names(df)
+@
+\subsubsection{The Class distribution in the dataset is the Evaluation }
+\begin{table}[ht]
+\caption{Number of Instances per Class} % title of Table
+\centering % used for centering table
+\begin{tabular}{c c c } % centered columns (3 columns)
+\hline\hline %inserts double horizontal lines
+Class & Number & Number as a Percentage \\ [0.5ex] % inserts table
+%heading
+\hline % inserts single horizontal line
+unacc & 1210 & 70.023 \\ % inserting body of the table
+acc & 348 & 22.222 \\
+good & 69 & 3.993 \\
+v-good & 65 & 3.769 \\ [1ex] % [1ex] adds vertical space
+\hline %inserts single line
+\end{tabular}
+\label{table:nonlin} % is used to refer this table in the text
+\end{table}
+\subsubsection*{Below is the Maintence ratings in the dataset for the cars.}
+\subsubsection*{Below there is also a graph with the car Price Ratings.}
+\subsubsection*{Also below is a bar graph the car evaluation with their level of Acceptiblity}
+<<eval=FALSE>>=
+#Bar plot of the Maintence rating of the cars
+  labelFreqs <- table(df$Maint)# frequency of labels
+    barplot(labelFreqs,col = gray.colors(4),xlab="Car Ratings",
+        main="Maintence Ratings")
+#Bar Plot of the price rating of the cars
+  labelFreqs <- table(df$Price)# frequency of labels
+   barplot(labelFreqs,col = gray.colors(4),xlab="Car Ratings",
+             main="Price Ratings")
+  labelFreqs <- table(df$Evaluation)# frequency of labels
+    barplot(labelFreqs,col = gray.colors(4),xlab="Acceptability",
+        main="Maintence Ratings")
+@
+\subsection{Pre-Processing}
+Before doing anything I began by checking my data for any missing values. Moreover I was also cheking for the amount of unique values there are for each variable. I have applied a function called sapply()which is an efficient way to pass the function as an argument and apply it to
+each column
+<<>>=
+  na_counts <- sapply(df,function(x) sum(is.na(x)))
+  unique_vals<- sapply(df, function(x) length(unique(x)))
+  na_counts
+  unique_vals
+@
+Now I going to begin applying changes that i feel need to be applied in order for accuring a prediction from the dataset. 
+I am going to begin with creating another dataframe so i have a back up.
+<<>>=
+#Creating a back up data frame called nd(New Data)
+ nd <- df
+
+#Re-definng the coloumn names to something more understandable 
+colnames(nd)[which(names(nd) == "vhigh")] <- "Price" #This is the price of the car
+colnames(nd)[which(names(nd) == "vhigh.1")] <- "Maint"#This is the Maintence of the car
+colnames(nd)[which(names(nd) == "X2")] <- "Doors"#This is the number of doors the car has 
+colnames(nd)[which(names(nd) == "X2.1")] <- "Persons"#The number of the people the car can hold
+colnames(nd)[which(names(nd) == "small")] <- "Boot"#This is the boot size
+colnames(nd)[which(names(nd) == "low")] <- "Safety"#This is the safety rating of the car
+colnames(nd)[which(names(nd) == "unacc")] <- "Evaluation"#This is the evaluation of the car
+
+#Changing the values to numbers so that it is easier to do predictions
+#One By one all features are going to be changed
+nd$Price<-as.character(nd$Price)
+nd$Price[nd$Price=="vhigh"] <- "4"
+nd$Price[nd$Price=="high"] <- "3"
+nd$Price[nd$Price=="med"] <- "2"
+nd$Price[nd$Price=="low"] <- "1"
+nd$Price = as.numeric(nd$Price)
+
+nd$Maint<-as.character(nd$Maint)
+nd$Maint[nd$Maint=="vhigh"] <- "4"
+nd$Maint[nd$Maint=="high"] <- "3"
+nd$Maint[nd$Maint=="med"] <- "2"
+nd$Maint[nd$Maint=="low"] <- "1"
+nd$Maint = as.numeric(nd$Maint)
+
+nd$Doors<-as.character(nd$Doors)
+nd$Doors[nd$Doors=="5more"] <- "5"
+nd$Doors[nd$Doors=="4"] <- "4"
+nd$Doors[nd$Doors=="3"] <- "3"
+nd$Doors[nd$Doors=="2"] <- "2"
+nd$Doors[nd$Doors=="1"] <- "1"
+nd$Doors = as.numeric(nd$Doors)
+
+nd$Persons<-as.character(nd$Persons)
+nd$Persons[nd$Persons=="more"] <- "5"
+nd$Persons[nd$Persons=="4"] <- "4"
+nd$Persons[nd$Persons=="2"] <- "2"
+nd$Persons = as.numeric(nd$Persons)
+
+nd$Boot<-as.character(nd$Boot)
+nd$Boot[nd$Boot=="small"] <- "1"
+nd$Boot[nd$Boot=="med"] <- "2"
+nd$Boot[nd$Boot=="big"] <- "3"
+nd$Boot = as.numeric(nd$Boot)
+
+nd$Safety<-as.character(nd$Safety)
+nd$Safety[nd$Safety=="low"] <- "1"
+nd$Safety[nd$Safety=="med"] <- "2"
+nd$Safety[nd$Safety=="high"] <- "3"
+nd$Safety = as.numeric(nd$Safety)
+
+nd$Evaluation<-as.character(nd$Evaluation)
+nd$Evaluation[nd$Evaluation=="unacc"] <- "1"
+nd$Evaluation[nd$Evaluation=="acc"] <- "2"
+nd$Evaluation[nd$Evaluation=="good"] <- "3"
+nd$Evaluation[nd$Evaluation=="vgood"] <- "4"
+nd$Evaluation = as.numeric(nd$Evaluation)
+@
+\subsubsection*{Box plot for the Evaluation against the price}
+<<>>=
+attach(nd)
+boxplot(Evaluation ~ Price,
+        xlab="Price",ylab="Evaluation",
+        col=topo.colors(4))
+legend("topright", inset=.02, title="Evaluation Ratings",
+   c("1=Unacceptable","2=Acceptable","3=Good","4=Very Good"), fill=topo.colors(4), horiz=FALSE, cex=0.8)
+@
+\emph{Price; 1 = Low 2 = Medium 3 = High 4 = Very High} 
+\section{Modelling/ Classification}
+The approach taken to modelling the data set was the random forest technique this approach was taken because it outputs a prediction matrix's of arbitrary size in this case there are 4 factors which are being predicted which result in a prediction matrix size 16.Random forest combines flexibility and power into a learning method as the entity uses only a small random percentage of the full dataset. Moreover, the technique used can handle extremely large datasets which might cause other models to fail.  Furthermore random forest is appropriate for missing data as well as categorical or continous details.
+\subsubsection*{Dividing the dataset into training and testing subset}
+The system sets the class label as a factor after being transformed to a Numeric Value
+<<>>=
+#Setting the Label as a Factor avoid to regression to face matheatical errors 
+nd$Evaluation <- as.factor(nd$Evaluation)
+@
+The system begins with spliting the data into training and testing sets.
+<<>>=
+#Importing the Correct Library
+library(caret)
+#splitting the data set in to 2 parts one for training and the other for testing
+#80 percent set is the traing
+inTrain <- createDataPartition(y=nd$Evaluation,
+                               p=.8,list=FALSE)
+#defining the training set as the variable created above
+training <- nd[inTrain,]
+#defining the testing data set from what is left over from the variable created above 
+testing <- nd [-inTrain,]
+#Performing a test to check the the total number of records both train/test are equal to the orgininal set
+#This should result in a display of true
+nrow(training)+nrow(testing)==nrow(nd)
+@
+The program creates a fit model on which the classification can begin
+<<>>=
+#create the variable on which the evaluation is being predicted against all others 
+fitModel <- train(Evaluation ~ .,data=training,
+                  method="rf",prox=TRUE)
+#Displaying the final model before the predictions
+fitModel$finalModel
+
+df_C <- classCenter(training[,c(3,4)],
+                    training$Evaluation,fitModel$finalModel$prox)
+df_C <- as.data.frame(df_C)
+df_C$Evaluation <- rownames(df_C)
+@
+Displaying the fitmodel
+<<>>=
+#Getting the system to display the fit model
+summary(fitModel)
+@
+Building the prediction model
+<<>>=
+#Test the model for this run
+pred <- predict(fitModel, testing)
+testing$correctPred <- pred==testing$Evaluation
+@
+Retriving the Result
+<<>>=
+#Assigning and displaying the results
+results <- table(pred,testing$Evaluation)
+results
+@
+Testing the values to see what the Accuracy is
+<<>>=
+#Assinging the accuracy and displaying it
+accuracy <- sum(diag(results)) / sum(results) * 100
+accuracy
+@
+
+\section{Improving Performance}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%Include the bar chart photos please
+%ask Eyad about the scatter plot of inthe second attempt.
+
+
+%ask if line 203 is correct
+
+%improvment bit 
+%Random forest contains several parameters that can be tuned to improve the performance. However, here we will only try to vary the number of trees and see if this makes any difference in the classification accuracy:Fit model, vary number of trees, and visualise results: Check out LAB 4
+
+\end{document}
